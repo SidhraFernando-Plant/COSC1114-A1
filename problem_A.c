@@ -15,16 +15,17 @@ pthread_mutex_t buffer_lock;
 const char LAST_CHAR = 'F';
 
 void * producer(void * param) {
-   for(char ch='A'; ch <= LAST_CHAR; ch++) {
+   while(true) {
       pthread_mutex_lock(&buffer_lock); 
       {
-         printf("producer, checking if empty\n");
+         //printf("producer, checking if empty\n");
          while(full) {
             pthread_cond_wait(&wait_here, &buffer_lock);
          }
          int randomNo = rand() % 1000;
          buffer = randomNo;
          full = true;
+         sleep(1);
       }
       pthread_mutex_unlock(&buffer_lock);
       pthread_cond_signal(&wait_here);
@@ -32,17 +33,17 @@ void * producer(void * param) {
 }
 
 void * consumer(void * param) {
-   for(char ch='A'; ch <= LAST_CHAR; ch++) {
+   while(true) {
       pthread_mutex_lock(&buffer_lock); 
       {
-         printf("consumer, checking if full\n");
+         //printf("consumer, checking if full\n");
          while(!full) {
             pthread_cond_wait(&wait_here, &buffer_lock);
          }
-
          printf("no. is %d\n", buffer);
          full = false;
          buffer = -1;
+         sleep(1);
       }
       pthread_mutex_unlock(&buffer_lock);
       pthread_cond_signal(&wait_here);
@@ -69,6 +70,7 @@ int main(void) {
       return EXIT_FAILURE;
    }
 
-   pthread_exit(NULL);
-   return EXIT_SUCCESS;
+   sleep(10);
+   exit(EXIT_SUCCESS);
+   //return EXIT_SUCCESS;
 }
