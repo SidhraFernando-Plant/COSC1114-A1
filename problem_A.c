@@ -7,6 +7,7 @@
 
 int buffer = -1;
 bool full = false;
+bool keepGoing = true;
 
 pthread_cond_t wait_here;
 
@@ -15,7 +16,7 @@ pthread_mutex_t buffer_lock;
 const char LAST_CHAR = 'F';
 
 void * producer(void * param) {
-   while(true) {
+   while(keepGoing) {
       pthread_mutex_lock(&buffer_lock); 
       {
          //printf("producer, checking if empty\n");
@@ -30,10 +31,11 @@ void * producer(void * param) {
       pthread_mutex_unlock(&buffer_lock);
       pthread_cond_signal(&wait_here);
    }
+   return NULL;
 }
 
 void * consumer(void * param) {
-   while(true) {
+   while(keepGoing) {
       pthread_mutex_lock(&buffer_lock); 
       {
          //printf("consumer, checking if full\n");
@@ -48,6 +50,7 @@ void * consumer(void * param) {
       pthread_mutex_unlock(&buffer_lock);
       pthread_cond_signal(&wait_here);
    }
+   return NULL;
 }
 
 
@@ -57,20 +60,17 @@ int main(void) {
    pthread_t prod_id;
    pthread_t cons_id;
 
-   int result;
-   result = pthread_create(&prod_id, NULL, producer, NULL);
-
-   if (result) {
-      return EXIT_FAILURE;
+   pthread_t tid_prod[5];
+   for(int i=0; i<5; i++) {
+      pthread_create(&tid_prod[i], NULL, producer, (void *) (long) i);
    }
-   
-   result = pthread_create(&cons_id, NULL, consumer, NULL);
 
-   if (result) {
-      return EXIT_FAILURE;
+   pthread_t tid_cons[5];
+   for(int i=0; i<5; i++) {
+      pthread_create(&tid_cons[i], NULL, consumer, (void *) (long) i);
    }
 
    sleep(10);
-   exit(EXIT_SUCCESS);
-   //return EXIT_SUCCESS;
+   keepGoing = false;
+   return EXIT_SUCCESS;
 }
