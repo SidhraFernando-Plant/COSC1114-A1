@@ -21,25 +21,28 @@ void * producer(void * param) {
       {
          printf("barber, checking if there are any customers (enter cond_wait)\n");
          while(!customer) {
+            printf("----barber looping)\n");
             pthread_cond_wait(&barber_sleep, &seat_lock);
          }
          printf("----barber waking up (cond_signal received)\n");
          //go through all seats and check for customers
-         for(int i=0;i<5;i++) {
-            //if a customer is in the seat
-            if(seats[i]!=-1) {
+         //while the first seat has a customer
+         while(seats[0]!=-1) {
                //serve the customer
-               printf("--------barber servicing customer %d in seat %d\n", seats[i], i);
-               int randomNo = rand() % 500000;
+               printf("--------barber servicing customer %d in first seat\n", seats[0]);
+               int randomNo = rand() % 700000;
                usleep(randomNo);
-               //int randomNo = rand() % 10000;
                //remove them from the seat
-               printf("------------barber removing customer %d from seats array\n", i);
-               seats[i] = -1;
-               
-            }
+               //shuffle each other customer
+               printf("------------barber removing customer %d from seats array\n", seats[0]);
+               for(int i=0; i<4; i++) {
+                  seats[i] = seats[i+1];
+               }
+               //new empty seat is -1
+               seats[4] = -1;
          }
          customer = false;
+          printf(customer ? "true" : "false");
       }
       pthread_mutex_unlock(&seat_lock);
       pthread_cond_signal(&barber_sleep);
@@ -56,7 +59,7 @@ void * consumer(void * param) {
          //customer enters the store
          //printf("customer %ld enter store, check seat\n", customerNo);
          // check if a seat is available
-         for(int i=0;i<5;i++) {
+         for(int i=0;i<4;i++) {
             if(seats[i]==-1&&mySeat==-1) {
                mySeat = i;
                printf("seat %d is available! customer %ld sitting in it (adding to seats array)\n", i, customerNo);
@@ -78,7 +81,7 @@ void * consumer(void * param) {
             //printf("no. is %d\n", seat);
             //sleep(1);
             pthread_mutex_unlock(&seat_lock);
-            pthread_cond_signal(&barber_sleep);
+            //pthread_cond_signal(&barber_sleep);
             
          }
          // wait for barber to finish
@@ -86,6 +89,8 @@ void * consumer(void * param) {
             printf("there's no free seats, customer %ld is leaving (unlock mutex)\n", customerNo);
             //sleep(1);
             pthread_mutex_unlock(&seat_lock);
+            pthread_cond_signal(&barber_sleep);
+            printf(customer ? "true" : "false");
             
             //exit(EXIT_SUCCESS);
          }
@@ -125,7 +130,7 @@ int main(void) {
       return EXIT_FAILURE;
    }
 
-   sleep(10);
+   sleep(20);
    exit(EXIT_SUCCESS);
    //return EXIT_SUCCESS;
 }
