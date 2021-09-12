@@ -6,7 +6,7 @@ clean:
 barbers: problem_D.o
 	gcc -lpthread -std=c99 -Wall -Werror -g -O -o $@ $^
 
-prod_cons: problem_A.o
+prodCons: problem_A.o
 	gcc -lpthread -std=c99 -Wall -Werror -g -O -o $@ $^
 
 %.o: %.cpp
