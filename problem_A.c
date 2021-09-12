@@ -5,16 +5,18 @@
 #include <pthread.h>
 #include <stdbool.h>
 
-int buckets[5] = {-1, -1, -1, -1, -1};
-//int buffer = -1;
+#define EMPTY_VAL -1
+#define BUCKETS_AMOUNT 5
+#define RANDOM_MAX 1000
+
+int buckets[BUCKETS_AMOUNT] = {EMPTY_VAL, EMPTY_VAL, EMPTY_VAL, EMPTY_VAL, EMPTY_VAL};
+//int buffer = EMPTY_VAL;
 bool full = false;
 bool keepGoing = true;
 
 pthread_cond_t wait_here;
 
 pthread_mutex_t buckets_lock;
-
-const char LAST_CHAR = 'F';
 
 void * producer(void * param) {
    while(keepGoing) {
@@ -24,9 +26,9 @@ void * producer(void * param) {
          while(full) {
             pthread_cond_wait(&wait_here, &buckets_lock);
          }
-         for(int i=0; i<5; i++) {
-            if(buckets[i]==-1) {
-               int randomNo = rand() % 1000;
+         for(int i=0; i<BUCKETS_AMOUNT; i++) {
+            if(buckets[i]==EMPTY_VAL) {
+               int randomNo = rand() % RANDOM_MAX;
                buckets[i] = randomNo;
             }
          }
@@ -36,8 +38,10 @@ void * producer(void * param) {
          //sleep(1);
       }
       pthread_mutex_unlock(&buckets_lock);
-      pthread_cond_signal(&wait_here);
+      pthread_cond_broadcast(&wait_here);
+      //printf("loop end\n");
    }
+   //printf("thread exiting\n");
    exit(EXIT_SUCCESS);
 }
 
@@ -49,19 +53,37 @@ void * consumer(void * param) {
          while(!full) {
             pthread_cond_wait(&wait_here, &buckets_lock);
          }
-         for(int i=0; i<5; i++) {
-            if(buckets[i]!=-1) {
+         for(int i=0; i<BUCKETS_AMOUNT; i++) {
+            if(buckets[i]!=EMPTY_VAL) {
                printf("no. is %d\n", buckets[i]);
-               buckets[i] = -1;
+               buckets[i] = EMPTY_VAL;
             }
          }
          full = false;
          //sleep(1);
       }
       pthread_mutex_unlock(&buckets_lock);
-      pthread_cond_signal(&wait_here);
+      pthread_cond_broadcast(&wait_here);
+      //printf("loop end\n");
    }
+   //printf("thread exiting\n");
    exit(EXIT_SUCCESS);
+}
+
+void * generateThreads(void * param) {
+   pthread_t tid [10];
+   //int i = 0;
+   for(int i=0; i<10; i++) {
+      if(i%2==0) {
+         //printf("making p thread\n");
+         pthread_create(&tid[i], NULL, producer, (void *) (long) i);
+      }
+      else {
+         //printf("making c thread\n");
+         pthread_create(&tid[i], NULL, consumer, (void *) (long) i);
+      }
+   }
+   pthread_exit(NULL);
 }
 
 
@@ -70,15 +92,11 @@ int main(void) {
    pthread_cond_init(&wait_here, NULL);
    pthread_t prod_id;
    pthread_t cons_id;
+   pthread_t enter_customers_id;
 
    int result;
-   result = pthread_create(&prod_id, NULL, producer, NULL);
 
-   if (result) {
-      return EXIT_FAILURE;
-   }
-   
-   result = pthread_create(&cons_id, NULL, consumer, NULL);
+   result = pthread_create(&enter_customers_id, NULL, generateThreads, NULL);
 
    if (result) {
       return EXIT_FAILURE;
