@@ -5,8 +5,13 @@
 #include <pthread.h>
 #include <stdbool.h>
 
+#define EMPTY_VAL -1
+#define SEATS_AMOUNT 5
+#define CUSTOMERS_AMOUNT 200
+#define RANDOM_MAX 700000
+
 //if buffer = 0, there is no customer. Otherwise, there is a customer
-int seats[5] = {-1, -1, -1, -1, -1};
+int seats[SEATS_AMOUNT] = {EMPTY_VAL, EMPTY_VAL, EMPTY_VAL, EMPTY_VAL, EMPTY_VAL};
 bool customer = false;
 bool keepGoing = true;
 
@@ -27,19 +32,19 @@ void * producer(void * param) {
          printf("----barber waking up (cond_signal received)\n");
          //go through all seats and check for customers
          //while the first seat has a customer
-         while(seats[0]!=-1) {
+         while(seats[0]!=EMPTY_VAL) {
                //serve the customer
                printf("--------barber servicing customer %d in first seat\n", seats[0]);
-               int randomNo = rand() % 700000;
+               int randomNo = rand() % RANDOM_MAX;
                usleep(randomNo);
                //remove them from the seat
                //shuffle each other customer
                printf("------------barber removing customer %d from seats array\n", seats[0]);
-               for(int i=0; i<4; i++) {
+               for(int i=0; i<SEATS_AMOUNT-1; i++) {
                   seats[i] = seats[i+1];
                }
-               //new empty seat is -1
-               seats[4] = -1;
+               //new empty seat is EMPTY_VAL
+               seats[SEATS_AMOUNT-1] = EMPTY_VAL;
          }
          customer = false;
           printf(customer ? "true" : "false");
@@ -54,14 +59,14 @@ void * producer(void * param) {
 void * consumer(void * param) {
       long customerNo = (long) param;
       bool seatAvailable = false;
-      int mySeat = -1;
+      int mySeat = EMPTY_VAL;
       pthread_mutex_lock(&seat_lock); 
       {
          //customer enters the store
          //printf("customer %ld enter store, check seat\n", customerNo);
          // check if a seat is available
          for(int i=0;i<4;i++) {
-            if(seats[i]==-1&&mySeat==-1) {
+            if(seats[i]==EMPTY_VAL&&mySeat==EMPTY_VAL) {
                mySeat = i;
                printf("seat %d is available! customer %ld sitting in it (adding to seats array)\n", i, customerNo);
                //sleep(1);
@@ -69,7 +74,7 @@ void * consumer(void * param) {
 
             }
          }
-         if(mySeat!=-1) {
+         if(mySeat!=EMPTY_VAL) {
             //tell the barber to wake up and serve me
             customer = true;
             //pthread_mutex_unlock(&seat_lock);
@@ -100,10 +105,10 @@ void * consumer(void * param) {
 }
 
 void * generateCustomers(void * param) {
-   pthread_t tid [200];
+   pthread_t tid [CUSTOMERS_AMOUNT];
    int i = 0;
-   while(keepGoing && i<200) {
-      int randomNo = rand() % 700000;
+   while(keepGoing && i<CUSTOMERS_AMOUNT) {
+      int randomNo = rand() % RANDOM_MAX;
       usleep(randomNo);
       pthread_create(&tid[i], NULL, consumer, (void *) (long) i);
       i++;

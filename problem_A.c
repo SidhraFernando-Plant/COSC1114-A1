@@ -7,6 +7,8 @@
 
 #define EMPTY_VAL -1
 #define BUCKETS_AMOUNT 5
+#define PRODUCERS_AMOUNT 5
+#define CONSUMERS_AMOUNT 5
 #define RANDOM_MAX 1000
 
 int buckets[BUCKETS_AMOUNT] = {EMPTY_VAL, EMPTY_VAL, EMPTY_VAL, EMPTY_VAL, EMPTY_VAL};
@@ -71,15 +73,16 @@ void * consumer(void * param) {
 }
 
 void * generateThreads(void * param) {
-   pthread_t tid [10];
+   int totalThreads = PRODUCERS_AMOUNT + CONSUMERS_AMOUNT;
+   pthread_t tid [totalThreads];
    //int i = 0;
-   for(int i=0; i<10; i++) {
+   for(int i=0; i<totalThreads; i++) {
+      //this will work in cases where we want to make an equal amount of producers and consumers
       if(i%2==0) {
-         //printf("making p thread\n");
          pthread_create(&tid[i], NULL, producer, (void *) (long) i);
       }
       else {
-         //printf("making c thread\n");
+         //make every second thread a consumer, other threads will be producers
          pthread_create(&tid[i], NULL, consumer, (void *) (long) i);
       }
    }
