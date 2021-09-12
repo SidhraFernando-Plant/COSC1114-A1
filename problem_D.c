@@ -130,7 +130,7 @@ int main(void) {
       return EXIT_FAILURE;
    }
 
-   sleep(20);
+   sleep(10);
    exit(EXIT_SUCCESS);
    //return EXIT_SUCCESS;
 }
