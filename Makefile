@@ -1,7 +1,7 @@
 .default: all
 
 clean:
-	rm -rf barbers prod_cons *.o *.dSYM
+	rm -rf barbers prodCons *.o *.dSYM
 
 barbers: problem_D.o
 	gcc -lpthread -std=c99 -Wall -Werror -g -O -o $@ $^

@@ -44,7 +44,6 @@ void * producer(void * param) {
          printf("a producer filled buckets array  ||  ");
          //buckets are now full, update variable
          full = true;
-         sleep(1);
       }
       printf("a producer unlocking buckets  ||  ");
       pthread_mutex_unlock(&buckets_lock);
@@ -71,7 +70,6 @@ void * consumer(void * param) {
             }
          }
          full = false;
-         sleep(1);
       }
       printf("a consumer unlocking buckets  ||  ");
       pthread_mutex_unlock(&buckets_lock);
