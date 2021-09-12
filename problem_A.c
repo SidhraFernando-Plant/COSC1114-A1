@@ -32,14 +32,10 @@ void * producer(void * param) {
          while(full) {
             pthread_cond_wait(&wait_here, &buckets_lock);
          }
-         
          for(int i=0; i<BUCKETS_AMOUNT; i++) {
-            
-            //if a bucket is empty, fill it
-            if(buckets[i]==EMPTY_VAL) {
-               int randomNo = rand() % RANDOM_MAX;
-               buckets[i] = randomNo;
-            }
+            //fill each bucket
+            int randomNo = rand() % RANDOM_MAX;
+            buckets[i] = randomNo;
          }
          printf("a producer filled buckets array  ||  ");
          //buckets are now full, update variable
@@ -60,23 +56,23 @@ void * consumer(void * param) {
       pthread_mutex_lock(&buckets_lock); 
       {
          printf("a consumer checking if buckets full  ||  ");
+         //wait while buckets are empty
          while(!full) {
             pthread_cond_wait(&wait_here, &buckets_lock);
          }
          for(int i=0; i<BUCKETS_AMOUNT; i++) {
-            if(buckets[i]!=EMPTY_VAL) {
-               printf("\nno. is %d", buckets[i]);
-               buckets[i] = EMPTY_VAL;
-            }
+            //print each bucket
+            printf("\nno. is %d", buckets[i]);
+            buckets[i] = EMPTY_VAL;
          }
+         printf("\n");
+         //buckets are now empty, update variable
          full = false;
       }
       printf("a consumer unlocking buckets  ||  ");
       pthread_mutex_unlock(&buckets_lock);
       pthread_cond_broadcast(&wait_here);
-      //printf("loop end\n");
    }
-   //printf("thread exiting\n");
    return NULL;
 }
 
@@ -85,14 +81,13 @@ void * generateThreads(void * param) {
    srand(time(NULL));
    int totalThreads = PRODUCERS_AMOUNT + CONSUMERS_AMOUNT;
    pthread_t tid [totalThreads];
-   //int i = 0;
    for(int i=0; i<totalThreads; i++) {
-      //this will work in cases where we want to make an equal amount of producers and consumers
+      //we want to make an equal amount of producers and consumers
+      //make every second one a consumer, others will be producers
       if(i%2==0) {
          pthread_create(&tid[i], NULL, producer, NULL);
       }
       else {
-         //make every second thread a consumer, other threads will be producers
          pthread_create(&tid[i], NULL, consumer, NULL);
       }
    }
@@ -119,6 +114,5 @@ int main(void) {
 
    sleep(10);
    keepGoing = false;
-   //exit(EXIT_SUCCESS);
    pthread_exit(NULL);
 }
