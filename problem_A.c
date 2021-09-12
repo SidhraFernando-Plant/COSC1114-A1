@@ -5,72 +5,87 @@
 #include <pthread.h>
 #include <stdbool.h>
 
-int buffer = -1;
+int buckets[5] = {-1, -1, -1, -1, -1};
+//int buffer = -1;
 bool full = false;
 bool keepGoing = true;
 
 pthread_cond_t wait_here;
 
-pthread_mutex_t buffer_lock;
+pthread_mutex_t buckets_lock;
 
 const char LAST_CHAR = 'F';
 
 void * producer(void * param) {
    while(keepGoing) {
-      pthread_mutex_lock(&buffer_lock); 
+      pthread_mutex_lock(&buckets_lock); 
       {
          //printf("producer, checking if empty\n");
          while(full) {
-            pthread_cond_wait(&wait_here, &buffer_lock);
+            pthread_cond_wait(&wait_here, &buckets_lock);
          }
-         int randomNo = rand() % 1000;
-         buffer = randomNo;
+         for(int i=0; i<5; i++) {
+            if(buckets[i]==-1) {
+               int randomNo = rand() % 1000;
+               buckets[i] = randomNo;
+            }
+         }
+         //full if there is at least one number in the bucket
+         ///not full if there is at least one empty bucket
          full = true;
-         sleep(1);
+         //sleep(1);
       }
-      pthread_mutex_unlock(&buffer_lock);
+      pthread_mutex_unlock(&buckets_lock);
       pthread_cond_signal(&wait_here);
    }
-   return NULL;
+   exit(EXIT_SUCCESS);
 }
 
 void * consumer(void * param) {
    while(keepGoing) {
-      pthread_mutex_lock(&buffer_lock); 
+      pthread_mutex_lock(&buckets_lock); 
       {
          //printf("consumer, checking if full\n");
          while(!full) {
-            pthread_cond_wait(&wait_here, &buffer_lock);
+            pthread_cond_wait(&wait_here, &buckets_lock);
          }
-         printf("no. is %d\n", buffer);
+         for(int i=0; i<5; i++) {
+            if(buckets[i]!=-1) {
+               printf("no. is %d\n", buckets[i]);
+               buckets[i] = -1;
+            }
+         }
          full = false;
-         buffer = -1;
-         sleep(1);
+         //sleep(1);
       }
-      pthread_mutex_unlock(&buffer_lock);
+      pthread_mutex_unlock(&buckets_lock);
       pthread_cond_signal(&wait_here);
    }
-   return NULL;
+   exit(EXIT_SUCCESS);
 }
 
 
 int main(void) {
-   pthread_mutex_init(&buffer_lock, NULL);
+   pthread_mutex_init(&buckets_lock, NULL);
    pthread_cond_init(&wait_here, NULL);
    pthread_t prod_id;
    pthread_t cons_id;
 
-   pthread_t tid_prod[5];
-   for(int i=0; i<5; i++) {
-      pthread_create(&tid_prod[i], NULL, producer, (void *) (long) i);
-   }
+   int result;
+   result = pthread_create(&prod_id, NULL, producer, NULL);
 
-   pthread_t tid_cons[5];
-   for(int i=0; i<5; i++) {
-      pthread_create(&tid_cons[i], NULL, consumer, (void *) (long) i);
+   if (result) {
+      return EXIT_FAILURE;
+   }
+   
+   result = pthread_create(&cons_id, NULL, consumer, NULL);
+
+   if (result) {
+      return EXIT_FAILURE;
    }
 
    sleep(10);
    keepGoing = false;
-   return EXIT_SUCCESS;
+   //exit(EXIT_SUCCESS);
+   pthread_exit(NULL);
 }

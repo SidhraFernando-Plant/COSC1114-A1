@@ -16,7 +16,7 @@ pthread_cond_t customer_wait;
 pthread_mutex_t seat_lock;
 
 void * producer(void * param) {
-   while(true) {
+   while(keepGoing) {
       pthread_mutex_lock(&seat_lock); 
       {
          printf("barber, checking if there are any customers (enter cond_wait)\n");
@@ -47,7 +47,8 @@ void * producer(void * param) {
       pthread_mutex_unlock(&seat_lock);
       pthread_cond_signal(&barber_sleep);
    }
-   return NULL;
+   pthread_cond_signal(&barber_sleep);
+   pthread_exit(NULL);
 }
 
 void * consumer(void * param) {
@@ -94,18 +95,20 @@ void * consumer(void * param) {
             
             //exit(EXIT_SUCCESS);
          }
-      return NULL;
+      pthread_exit(NULL);
    }
 }
 
 void * generateCustomers(void * param) {
    pthread_t tid [200];
-   for(int i=0; i<200; i++) {
+   int i = 0;
+   while(keepGoing && i<200) {
       int randomNo = rand() % 700000;
       usleep(randomNo);
       pthread_create(&tid[i], NULL, consumer, (void *) (long) i);
+      i++;
    }
-   return NULL;
+   pthread_exit(NULL);
 }
 
 
@@ -131,6 +134,7 @@ int main(void) {
    }
 
    sleep(10);
-   exit(EXIT_SUCCESS);
+   keepGoing = false;
+   pthread_exit(NULL);
    //return EXIT_SUCCESS;
 }
